@@ -3,63 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Forex Pribadi</title>
+<title>Trade Log Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family:'Segoe UI',sans-serif; background:#f4f6f8; margin:0; padding:0; }
-header { background:#1f2937; color:#fff; text-align:center; padding:1rem; font-size:1.5rem; }
-.dashboard { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1rem; padding:2rem; }
-.card { background:#fff; border-radius:12px; padding:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.05);}
-.card h3 { margin-top:0; margin-bottom:1rem; color:#111827; }
-canvas { width:100% !important; height:250px !important; }
-table { width:100%; border-collapse:collapse; }
-th, td { padding:0.5rem; text-align:center; border-bottom:1px solid #e5e7eb;}
-th { background-color:#f3f4f6; }
-input, select { margin:0.2rem; padding:0.3rem; }
+body { font-family:'Segoe UI',sans-serif; background:#0e101a; color:#fff; margin:0; padding:0;}
+header { background:#1b1f34; padding:1rem; text-align:center; font-size:1.5rem; }
+.dashboard { padding:1rem; }
+.kpi { display:flex; gap:1rem; margin-bottom:1rem; }
+.card { background:#1b1f34; padding:1rem; border-radius:8px; flex:1; }
+.card h3 { margin:0 0 0.5rem 0; font-size:1rem; color:#ccc;}
+table { width:100%; border-collapse:collapse; margin-top:1rem; font-size:0.8rem;}
+th, td { padding:0.4rem; text-align:center; border-bottom:1px solid #2a2d3e; }
+th { background:#222537; color:#aaa; }
+td { color:#fff; }
+td.positive { color:#10b981; }
+td.negative { color:#ef4444; }
+select, input { margin:0 0.2rem; padding:0.3rem; background:#1b1f34; border:1px solid #444; color:#fff; border-radius:4px;}
+.filter-bar { margin-bottom:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;}
 </style>
 </head>
 <body>
 
-<header>Dashboard Forex Pribadi</header>
-
+<header>TRADE LOG</header>
 <div class="dashboard">
 
-  <!-- Summary KPIs -->
-  <div class="card" id="kpiCard">
-    <h3>Summary KPIs</h3>
-    <p>Total Trades: <span id="totalTrades">0</span></p>
-    <p>Winning Trades: <span id="winTrades">0</span></p>
-    <p>Losing Trades: <span id="loseTrades">0</span></p>
-    <p>Win Rate: <span id="winRate">0%</span></p>
-    <p>Profit/Loss: $<span id="totalPL">0</span></p>
+  <!-- KPI Summary -->
+  <div class="kpi">
+    <div class="card"><h3>Total Trades</h3><p id="totalTrades">0</p></div>
+    <div class="card"><h3>Winning Trades</h3><p id="winTrades">0</p></div>
+    <div class="card"><h3>Losing Trades</h3><p id="loseTrades">0</p></div>
+    <div class="card"><h3>Win Rate</h3><p id="winRate">0%</p></div>
+    <div class="card"><h3>Total P/L ($)</h3><p id="totalPL">0</p></div>
   </div>
 
-  <!-- Equity Curve -->
-  <div class="card">
-    <h3>Equity Curve</h3>
-    <canvas id="equityChart"></canvas>
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <label>Symbol:<select id="symbolFilter"><option>All</option></select></label>
+    <label>Type:<select id="typeFilter"><option>All</option><option>Buy</option><option>Sell</option></select></label>
+    <label>Setup:<input type="text" id="setupFilter" placeholder="Setup"/></label>
+    <label>Emotion:<input type="text" id="emotionFilter" placeholder="Emotion"/></label>
   </div>
 
-  <!-- Monthly Performance -->
+  <!-- Trade Table -->
   <div class="card">
-    <h3>Monthly Performance</h3>
-    <canvas id="monthlyChart"></canvas>
-  </div>
-
-  <!-- Trade Details Table -->
-  <div class="card">
-    <h3>Trade Details</h3>
-    <label for="symbolFilter">Filter Symbol:</label>
-    <select id="symbolFilter"><option value="All">All</option></select>
-    <label for="typeFilter">Filter Type:</label>
-    <select id="typeFilter">
-      <option value="All">All</option>
-      <option value="Buy">Buy</option>
-      <option value="Sell">Sell</option>
-    </select>
     <table>
       <thead>
-        <tr><th>Date</th><th>Symbol</th><th>Type</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P/L</th></tr>
+        <tr>
+          <th>NO.</th><th>OPEN TIME</th><th>TYPE</th><th>SIZE</th><th>ITEM</th>
+          <th>ENTRY PRICE</th><th>S/L</th><th>T/P</th><th>CLOSE TIME</th>
+          <th>EXIT PRICE</th><th>TOTAL FEES</th><th>PROFIT/LOSS</th><th>PIPS</th>
+          <th>NET PNL ($)</th><th>PRICE %</th><th>DURATION</th><th>R-MUL.</th>
+          <th>TRADE SETUP</th><th>ENTRY/EXIT</th><th>EMOTION</th>
+          <th>REASON FOR BUYING/SELLING</th><th>ADDITIONAL NOTES</th>
+        </tr>
       </thead>
       <tbody id="tradeTable"></tbody>
     </table>
@@ -68,43 +64,39 @@ input, select { margin:0.2rem; padding:0.3rem; }
 </div>
 
 <script>
-// Contoh data trade pribadi
+// Contoh data trade log
 const trades = [
-  {date:'2026-02-01', symbol:'EURUSD', type:'Buy', qty:1, entry:1.08, exit:1.085, pl:50},
-  {date:'2026-02-02', symbol:'GBPUSD', type:'Sell', qty:2, entry:1.25, exit:1.245, pl:100},
-  {date:'2026-02-03', symbol:'USDJPY', type:'Buy', qty:1, entry:110, exit:111, pl:100},
-  {date:'2026-02-05', symbol:'EURUSD', type:'Sell', qty:1, entry:1.09, exit:1.085, pl:50}
+  {no:1, open:'2026-02-01 00:00', type:'BUY', size:0.01, item:'EURUSD', entry:1.1800, sl:1.1790, tp:1.1850, close:'2026-02-01 02:00', exit:1.1850, fees:0.1, pl:50, pips:50, net:50, pricePct:0.42, duration:'2h', rmul:0.5, setup:'ZRC-R', entryExit:'Full', emotion:'Neutral', reason:'Trend', notes:''},
+  {no:2, open:'2026-02-01 03:00', type:'SELL', size:0.01, item:'EURUSD', entry:1.1820, sl:1.1830, tp:1.1760, close:'2026-02-01 05:00', exit:1.1760, fees:0.1, pl:60, pips:60, net:59.9, pricePct:0.51, duration:'2h', rmul:0.6, setup:'ZRC-R', entryExit:'Full', emotion:'Neutral', reason:'Trend', notes:''}
 ];
 
-// Generate table dan filter options
+// Fill table & filters
 const tradeTable = document.getElementById('tradeTable');
 const symbolFilter = document.getElementById('symbolFilter');
-const typeFilter = document.getElementById('typeFilter');
 
-const symbols = [...new Set(trades.map(t=>t.symbol))];
-symbols.forEach(sym => { 
-  const opt = document.createElement('option'); 
-  opt.value = sym; opt.text = sym; 
-  symbolFilter.add(opt);
-});
+const symbols = [...new Set(trades.map(t=>t.item))];
+symbols.forEach(s=>{ const opt=document.createElement('option'); opt.value=s; opt.text=s; symbolFilter.add(opt);});
 
 function updateTable() {
   const sym = symbolFilter.value;
-  const type = typeFilter.value;
-  tradeTable.innerHTML = '';
+  const type = document.getElementById('typeFilter').value.toUpperCase();
+  const setup = document.getElementById('setupFilter').value.toLowerCase();
+  const emotion = document.getElementById('emotionFilter').value.toLowerCase();
+  tradeTable.innerHTML='';
   let total=0, win=0, lose=0, pl=0;
-  trades.forEach(t => {
-    if((sym==='All'||t.symbol===sym)&&(type==='All'||t.type===type)) {
+  trades.forEach(t=>{
+    if((sym==='All'||t.item===sym)&&(type==='ALL'||t.type===type)&&
+       (!setup||t.setup.toLowerCase().includes(setup))&&
+       (!emotion||t.emotion.toLowerCase().includes(emotion))
+      ){
       const row = tradeTable.insertRow();
-      row.insertCell().innerText = t.date;
-      row.insertCell().innerText = t.symbol;
-      row.insertCell().innerText = t.type;
-      row.insertCell().innerText = t.qty;
-      row.insertCell().innerText = t.entry;
-      row.insertCell().innerText = t.exit;
-      row.insertCell().innerText = t.pl;
-      total++;
-      pl += t.pl;
+      Object.values(t).forEach(val=>{
+        const cell = row.insertCell();
+        cell.innerText = val;
+        if(val>0 && typeof val==='number') cell.classList.add('positive');
+        if(val<0 && typeof val==='number') cell.classList.add('negative');
+      });
+      total++; pl+=t.pl;
       if(t.pl>0) win++; else lose++;
     }
   });
@@ -112,44 +104,14 @@ function updateTable() {
   document.getElementById('winTrades').innerText = win;
   document.getElementById('loseTrades').innerText = lose;
   document.getElementById('winRate').innerText = total? Math.round(win/total*100)+'%':'0%';
-  document.getElementById('totalPL').innerText = pl;
-  updateCharts();
+  document.getElementById('totalPL').innerText = pl.toFixed(2);
 }
 
 symbolFilter.addEventListener('change', updateTable);
-typeFilter.addEventListener('change', updateTable);
+document.getElementById('typeFilter').addEventListener('change', updateTable);
+document.getElementById('setupFilter').addEventListener('input', updateTable);
+document.getElementById('emotionFilter').addEventListener('input', updateTable);
 
-// Charts
-let equityChart, monthlyChart;
-
-function updateCharts() {
-  const filtered = trades.filter(t => 
-    (symbolFilter.value==='All'||t.symbol===symbolFilter.value) &&
-    (typeFilter.value==='All'||t.type===typeFilter.value)
-  );
-  const equityData = filtered.map(t=>t.pl).reduce((a,b,i)=> a.concat((a[i-1]||0)+b), []);
-  const labels = filtered.map(t=>t.date);
-  
-  if(equityChart) equityChart.destroy();
-  equityChart = new Chart(document.getElementById('equityChart'), {
-    type:'line',
-    data: { labels, datasets:[{label:'Equity', data:equityData, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.2)', tension:0.3}] }
-  });
-
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const monthlyPL = Array(12).fill(0);
-  filtered.forEach(t => {
-    const month = new Date(t.date).getMonth();
-    monthlyPL[month] += t.pl;
-  });
-  if(monthlyChart) monthlyChart.destroy();
-  monthlyChart = new Chart(document.getElementById('monthlyChart'), {
-    type:'bar',
-    data:{ labels:months, datasets:[{label:'Monthly P/L', data:monthlyPL, backgroundColor:'#10b981'}] }
-  });
-}
-
-// Init
 updateTable();
 </script>
 
